@@ -1,0 +1,13 @@
+# Dependencias para el demo de chat con LM Studio
+# Versión simple - solo texto (sin síntesis de voz)
+
+requests>=2.31.0
+
+# Opcional: Para TTS completo (si tienes voces disponibles)
+# torch>=1.9.0
+# transformers>=4.21.0
+# diffusers>=0.21.0
+# accelerate>=0.20.0
+soundfile>=0.12.0
+numpy>=1.21.0
+scipy>=1.7.0

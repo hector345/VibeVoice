@@ -1,0 +1,61 @@
+services:
+  vibevoice-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibevoice-chat-demo
+    
+    # Variables de entorno
+    environment:
+      - MODEL_PATH=microsoft/VibeVoice
+      - DEVICE=cpu
+      - LM_STUDIO_URL=http://host.docker.internal:1234
+      - PYTHONUNBUFFERED=1
+    
+    # Volúmenes para persistir datos
+    volumes:
+      # Montar directorio de outputs para guardar archivos de audio
+      - ./chat_outputs:/app/chat_outputs
+      # Opcional: montar cache de HuggingFace para evitar descargas repetidas
+      - huggingface_cache:/home/appuser/.cache/huggingface
+      # Opcional: montar directorio de voces si tienes voces locales
+      - ./demo/voices:/app/demo/voices:ro
+    
+    # Modo interactivo para el chat
+    stdin_open: true
+    tty: true
+    
+    # Configuración de red para acceder a LM Studio en el host
+    network_mode: "bridge"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    # Comando por defecto (puede ser sobrescrito)
+    command: ["python", "demo/chat_lm_studio_simple.py"]
+    
+    # Reiniciar política
+    restart: "no"
+
+  # Servicio web para chat de voz
+  vibevoice-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: vibevoice-web-chat
+    
+    environment:
+      - LM_STUDIO_URL=http://host.docker.internal:1234
+      - PYTHONUNBUFFERED=1
+    
+    ports:
+      - "5000:5000"
+    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    restart: "unless-stopped"
+
+# Volúmenes nombrados
+volumes:
+  huggingface_cache:
+    driver: local

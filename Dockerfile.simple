@@ -1,0 +1,28 @@
+# Dockerfile simple para Chat con LM Studio (solo texto)
+FROM python:3.10-slim
+
+# Instalar dependencias mínimas del sistema
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Instalar solo las dependencias necesarias
+RUN pip install --no-cache-dir requests
+
+# Copiar solo los archivos necesarios
+COPY demo/chat_lm_studio_simple.py /app/demo/
+COPY demo/test_docker_network.py /app/demo/
+COPY demo/requirements_chat.txt /app/demo/
+
+# Crear directorio para outputs
+RUN mkdir -p /app/chat_outputs
+
+# Variables de entorno
+ENV PYTHONUNBUFFERED=1
+ENV LM_STUDIO_URL=http://host.docker.internal:1234
+
+# Comando por defecto
+CMD ["python", "demo/chat_lm_studio_simple.py"]

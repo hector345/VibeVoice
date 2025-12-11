@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeVoice - Chat de Voz con IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+            background: #ff4444;
+        }
+
+        .status-indicator.connected {
+            background: #44ff44;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f4;
+            color: #333;
+        }
+
+        .message-time {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .voice-controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .mic-button {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .mic-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(238, 90, 82, 0.3);
+        }
+
+        .mic-button.recording {
+            background: #ff4444;
+            animation: recordingPulse 1s infinite;
+        }
+
+        @keyframes recordingPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .stop-button {
+            background: linear-gradient(135deg, #ffa726, #ff9800);
+            color: white;
+        }
+
+        .clear-button {
+            background: linear-gradient(135deg, #9e9e9e, #757575);
+            color: white;
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+        }
+
+        .voice-status {
+            flex: 1;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+        }
+
+        .welcome-message h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .feature-list li {
+            margin: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: '🎤';
+            position: absolute;
+            left: 0;
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .voice-controls {
+                gap: 10px;
+            }
+            
+            .voice-button {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🎤 VibeVoice Chat</h1>
+            <p>Chat de voz fluido con IA <span id="statusIndicator" class="status-indicator"></span></p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h3>¡Bienvenido al Chat de Voz!</h3>
+                <p>Mantén presionado el botón del micrófono y habla. La IA te responderá por voz.</p>
+                <ul class="feature-list">
+                    <li>Reconocimiento de voz en tiempo real</li>
+                    <li>Respuestas inteligentes de IA</li>
+                    <li>Síntesis de voz natural</li>
+                    <li>Conversación fluida sin escribir</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="voice-controls">
+            <button id="micButton" class="voice-button mic-button" title="Mantén presionado para hablar">
+                🎤
+            </button>
+            
+            <div class="voice-status" id="voiceStatus">
+                Mantén presionado el micrófono para hablar
+            </div>
+            
+            <button id="stopButton" class="voice-button stop-button" title="Detener audio" style="display: none;">
+                🔇
+            </button>
+            
+            <button id="clearButton" class="voice-button clear-button" title="Limpiar chat">
+                🗑️
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class VoiceChat {
+            constructor() {
+                this.isListening = false;
+                this.isSpeaking = false;
+                this.recognition = null;
+                this.synthesis = window.speechSynthesis;
+                this.sessionId = 'session_' + Date.now();
+                
+                this.initializeElements();
+                this.initializeSpeechRecognition();
+                this.checkServerStatus();
+                
+                // Verificar estado cada 30 segundos
+                setInterval(() => this.checkServerStatus(), 30000);
+            }
+            
+            initializeElements() {
+                this.micButton = document.getElementById('micButton');
+                this.stopButton = document.getElementById('stopButton');
+                this.clearButton = document.getElementById('clearButton');
+                this.voiceStatus = document.getElementById('voiceStatus');
+                this.chatMessages = document.getElementById('chatMessages');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                
+                // Event listeners
+                this.micButton.addEventListener('mousedown', () => this.startListening());
+                this.micButton.addEventListener('mouseup', () => this.stopListening());
+                this.micButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.startListening();
+                });
+                this.micButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.stopListening();
+                });
+                
+                this.stopButton.addEventListener('click', () => this.stopSpeaking());
+                this.clearButton.addEventListener('click', () => this.clearChat());
+            }
+            
+            initializeSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                } else if ('SpeechRecognition' in window) {
+                    this.recognition = new SpeechRecognition();
+                } else {
+                    this.showError('Tu navegador no soporta reconocimiento de voz');
+                    return;
+                }
+                
+                this.recognition.continuous = false;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'es-ES';
+                
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    this.micButton.classList.add('recording');
+                    this.voiceStatus.innerHTML = '🎤 Escuchando... suelta para enviar';
+                };
+                
+                this.recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    if (interimTranscript) {
+                        this.voiceStatus.innerHTML = `🎤 "${interimTranscript}"`;
+                    }
+                    
+                    if (finalTranscript) {
+                        this.sendMessage(finalTranscript.trim());
+                    }
+                };
+                
+                this.recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    this.showError(`Error de reconocimiento: ${event.error}`);
+                    this.resetMicButton();
+                };
+                
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    this.resetMicButton();
+                };
+            }
+            
+            startListening() {
+                if (this.isListening || this.isSpeaking) return;
+                
+                // Detener cualquier síntesis de voz en curso
+                this.synthesis.cancel();
+                
+                try {
+                    this.recognition.start();
+                } catch (error) {
+                    console.error('Error starting recognition:', error);
+                    this.showError('No se pudo iniciar el reconocimiento de voz');
+                }
+            }
+            
+            stopListening() {
+                if (this.recognition && this.isListening) {
+                    this.recognition.stop();
+                }
+            }
+            
+            resetMicButton() {
+                this.micButton.classList.remove('recording');
+                this.voiceStatus.innerHTML = 'Mantén presionado el micrófono para hablar';
+            }
+            
+            async sendMessage(message) {
+                if (!message.trim()) return;
+                
+                this.addMessage('user', message);
+                this.voiceStatus.innerHTML = '<div class="loading"></div> Procesando...';
+                
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            session_id: this.sessionId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.addMessage('assistant', data.response);
+                        this.speak(data.response);
+                    } else {
+                        this.showError(data.error || 'Error desconocido');
+                    }
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    this.showError('Error de conexión');
+                }
+                
+                this.voiceStatus.innerHTML = 'Mantén presionado el micrófono para hablar';
+            }
+            
+            speak(text) {
+                if (!text) return;
+                
+                // Cancelar cualquier síntesis en curso
+                this.synthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                
+                // Buscar una voz en español
+                const voices = this.synthesis.getVoices();
+                const spanishVoice = voices.find(voice => 
+                    voice.lang.startsWith('es') || voice.name.includes('Spanish')
+                );
+                if (spanishVoice) {
+                    utterance.voice = spanishVoice;
+                }
+                
+                utterance.onstart = () => {
+                    this.isSpeaking = true;
+                    this.stopButton.style.display = 'flex';
+                    this.voiceStatus.innerHTML = '🔊 Reproduciendo respuesta...';
+                };
+                
+                utterance.onend = () => {
+                    this.isSpeaking = false;
+                    this.stopButton.style.display = 'none';
+                    this.voiceStatus.innerHTML = 'Mantén presionado el micrófono para hablar';
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event);
+                    this.isSpeaking = false;
+                    this.stopButton.style.display = 'none';
+                    this.voiceStatus.innerHTML = 'Error en síntesis de voz';
+                };
+                
+                this.synthesis.speak(utterance);
+            }
+            
+            stopSpeaking() {
+                this.synthesis.cancel();
+                this.isSpeaking = false;
+                this.stopButton.style.display = 'none';
+                this.voiceStatus.innerHTML = 'Mantén presionado el micrófono para hablar';
+            }
+            
+            addMessage(role, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+                
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${content}
+                        <div class="message-time">${timeStr}</div>
+                    </div>
+                `;
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                
+                // Remover mensaje de bienvenida si existe
+                const welcomeMsg = this.chatMessages.querySelector('.welcome-message');
+                if (welcomeMsg) {
+                    welcomeMsg.remove();
+                }
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = message;
+                this.chatMessages.appendChild(errorDiv);
+                
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 5000);
+            }
+            
+            async clearChat() {
+                try {
+                    await fetch('/api/clear_history', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            session_id: this.sessionId
+                        })
+                    });
+                    
+                    this.chatMessages.innerHTML = `
+                        <div class="welcome-message">
+                            <h3>Chat limpiado</h3>
+                            <p>Mantén presionado el micrófono para empezar una nueva conversación.</p>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Error clearing chat:', error);
+                    this.showError('Error limpiando chat');
+                }
+            }
+            
+            async checkServerStatus() {
+                try {
+                    const response = await fetch('/api/health');
+                    const data = await response.json();
+                    
+                    if (data.lm_studio && data.lm_studio.connected) {
+                        this.statusIndicator.classList.add('connected');
+                    } else {
+                        this.statusIndicator.classList.remove('connected');
+                    }
+                } catch (error) {
+                    console.error('Error checking server status:', error);
+                    this.statusIndicator.classList.remove('connected');
+                }
+            }
+        }
+        
+        // Inicializar cuando la página esté cargada
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceChat();
+        });
+        
+        // Cargar voces cuando estén disponibles
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => {
+                // Las voces ya están cargadas
+            };
+        }
+    </script>
+</body>
+</html>

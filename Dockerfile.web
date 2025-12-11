@@ -1,0 +1,30 @@
+# Dockerfile para VibeVoice Web Chat
+FROM python:3.10-slim
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias de Python
+RUN pip install --no-cache-dir flask requests
+
+# Copiar archivos de la aplicación web
+COPY demo/web/ /app/
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs
+
+# Variables de entorno
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=voice_chat_app.py
+ENV LM_STUDIO_URL=http://host.docker.internal:1234
+
+# Exponer puerto
+EXPOSE 5000
+
+# Comando por defecto
+CMD ["python", "voice_chat_app.py", "--host", "0.0.0.0", "--port", "5000"]
